@@ -14,6 +14,7 @@ import {
   formatPoints,
   getBrandDisplayName,
 } from "@/lib/utils";
+import { useGems } from "@/components/providers/SupabaseGemProvider";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -95,6 +96,8 @@ function getPointsTypeBadge(type: string) {
 export default function WalletPage() {
   const { data: session, status: sessionStatus, update: updateSession } = useSession();
   const router = useRouter();
+  const { portalUser, gemBalance, loginWithGoogle, grantGems, spendGems } = useGems();
+  const [gemAction, setGemAction] = useState<string | null>(null);
 
   const [usdcBalance, setUsdcBalance] = useState(0);
   const [pointsBalance, setPointsBalance] = useState(0);
@@ -259,7 +262,7 @@ export default function WalletPage() {
         <h1 className="text-3xl font-bold text-text-primary mb-8">My Wallet</h1>
 
         {/* ── Balance Cards ──────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* USDC Balance */}
           <Card className="relative overflow-hidden">
             <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-primary/10 blur-2xl" />
@@ -335,6 +338,64 @@ export default function WalletPage() {
               <p className="text-xs text-text-secondary">
                 Save 50% on fees &bull; 5% off gacha pulls
               </p>
+            </div>
+          </Card>
+
+          {/* Portal Gems Balance */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[#f0c870]/10 blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-none bg-[#f0c870]/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[#f0c870]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l2.09 6.26L21 9.27l-5.18 4.73L17.82 21 12 17.27 6.18 21l1.64-6.73L3 9.27l6.91.99L12 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-text-secondary text-sm font-medium">Portal Gems</p>
+                  {portalUser ? (
+                    <p className="text-3xl font-bold text-[#f0c870]">
+                      {gemBalance}
+                      <span className="text-lg text-text-secondary ml-1">gems</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-text-secondary">Not connected</p>
+                  )}
+                </div>
+              </div>
+              {portalUser ? (
+                <div className="flex gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    loading={gemAction === "grant"}
+                    onClick={async () => {
+                      setGemAction("grant");
+                      await grantGems(50);
+                      setGemAction(null);
+                    }}
+                  >
+                    +50 Gems
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    loading={gemAction === "spend"}
+                    onClick={async () => {
+                      setGemAction("spend");
+                      const ok = await spendGems(10, "gcpacks_test");
+                      setGemAction(null);
+                      if (!ok) alert("Spend failed — insufficient gems or network error");
+                    }}
+                  >
+                    Spend 10
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="primary" size="sm" onClick={loginWithGoogle}>
+                  Connect Google
+                </Button>
+              )}
             </div>
           </Card>
         </div>
